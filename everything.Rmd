@@ -1,0 +1,578 @@
+---
+title: "reading arff into csv"
+author: "Emil Jessen"
+date: "7 okt 2020"
+output: html_document
+---
+Create td_output from .arff files
+```{r}
+setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/td_extracted_features/")
+getwd()
+
+library("pacman")
+p_load(farff, foreign, RWeka, data.table, tidyverse)
+
+getwd()
+temp = list.files(path =".", pattern="_td_output.arff")
+temp
+myfiles = lapply(temp, read.arff)
+td <- rbindlist(myfiles)
+td$file <- temp
+td$Diagnosis <- "td"
+
+td <- td %>%
+  select(file, Diagnosis, everything())
+
+# Writing a csv with all the TD-data
+write.csv(td, "../csv_files/td_output.csv")
+```
+
+Create sz_output from .arff files
+```{r}
+setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/sz_extracted_features/")
+getwd()
+
+library("pacman")
+p_load(farff, foreign, RWeka, data.table, tidyverse)
+
+getwd()
+temp = list.files(path =".", pattern="_sz_output.arff")
+temp
+myfiles = lapply(temp, read.arff)
+sz <- rbindlist(myfiles)
+sz$file <- temp
+sz$Diagnosis <- "sz"
+
+sz <- sz %>%
+  select(file, Diagnosis, everything())
+
+# Writing a csv with all the sz-data
+write.csv(sz, "../csv_files/sz_output.csv")
+```
+
+```{r}
+setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/")
+getwd()
+
+library("pacman")
+p_load(farff, foreign, RWeka, data.table, tidyverse, tidymodels, glmnet, caret, e1071, groupdata2)
+
+```
+
+Features, output:
+Reading extracted features, merging and making a sample for working with
+```{r}
+output <- rbind(read.csv("./csv_files/sz_output.csv"), read.csv("./csv_files/td_output.csv"))
+```
+
+Feature data
+```{r}
+output$Study <- NA
+output$ID <- NA
+output$Trial <- NA
+
+for (i in 1:length(output$file)){
+  cell <-output[i,"file"]
+  numbers <- gsub("[A-Za-z]|\\.|\\_","", cell)
+  
+  #Study
+  output[i,"Study"] <- substr(numbers, 1, 1)
+  
+  #Trials
+  if (nchar(numbers) == 6){
+    output[i,"Trial"] <- substr(numbers, 6, 6)
+  }
+  
+  else if (nchar(numbers) == 7){
+    output[i,"Trial"] <- substr(numbers, 6, 7)
+  }
+  
+  #ID
+  output[i,"ID"] <- substr(numbers, 3, 5)
+}
+
+# Deleting unnecessary columns
+output <- output %>%
+  select(name, class, X, file, Diagnosis, frameTime, Trial, Study, ID, everything())
+output <- output[,c(4:997)]
+
+# Making it same format as demo data
+output$ID <- as.integer(output$ID)
+output$Study <- as.integer(output$Study)
+output$Diagnosis <- as.character(output$Diagnosis)
+
+
+length(unique(output[output$Diagnosis == "td","ID"]))
+length(unique(output[output$Diagnosis == "sz","ID"]))
+
+```
+
+Demographic data
+```{r}
+# Load data
+demo <- read.csv("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/demographic_data/demographic_data_danish.csv", sep=";")
+
+# General fix
+colnames(demo)[1] <- "Study"
+colnames(demo)[3] <- "ID"
+
+# Just taking all the danish data
+demo <- demo %>% filter(demo$Language == "Danish")
+
+# Ordering by ID, and prepping Diagnosis for below for loop
+demo[is.na(demo$Diagnosis)] <- demo[order(demo$ID),]
+demo$Diagnosis[is.na(demo$Diagnosis)] <- 0
+
+# Make Diagnosis into same format as in "output"
+for (i in 1:length(demo$Diagnosis)){
+  cell <- demo[i,"Patctr"]
+  if (cell == "C" | cell == "c"){
+    demo[i,"Patctr"] <- "td"
+  }
+  else if (cell == "P" | cell == "p" ){
+    demo[i,"Patctr"] <- "sz"
+  }
+}
+
+# Making it same format as output
+demo$Diagnosis[demo$Diagnosis == 0] <- NA
+demo$ID <- as.integer(demo$ID)
+demo$Study <- as.integer(demo$Study)
+colnames(demo)[6] <- "Diagnosis"
+
+# Selecting the few columns I need from the demo
+cols <- colnames(demo[,1:7])
+variables_demo <- colnames(demo[,cols])
+demo <- demo[,variables_demo]
+```
+
+# Merging the two datasets
+```{r}
+#Merging
+df <- merge(output, demo, by=c("ID","Diagnosis", "Study"), all = T)
+
+# deleting all entries that don't have acoustic data
+df <- df[!is.na(df$file), ]
+
+# making sure each ID is unique (+ with 1000 for SZ's)
+df$ID <- as.numeric(df$ID)
+
+for (i in 1:length(df$ID)){
+  cell <- df[i,"ID"]
+  if (df[i,"Diagnosis"] == "sz"){
+   df[i,"ID"] <- cell+1000
+  }
+}
+
+```
+
+Making sure df has good data
+```{r}
+# Making the order more readable, and deleting rows with all NA's:
+df <- df %>%
+  select(ID, Study, Diagnosis, Trial, Gender, Age, cols, everything())
+
+# Finding out which ID's have NA's in Gender, and giving them what they should have
+unique(df[is.na(df$Gender), 1])
+#View(df[df$ID == 326 | df$ID == 1448, 1:10 ])
+#View(demo[demo$ID == 326 | demo$ID == 448, ])
+df[df$ID == 326 | df$ID == 1448, 5] <- "M"
+
+# Make diagnosis into a factor
+class(df$Diagnosis)
+#df$Diagnosis <- as.factor(df$Diagnosis)
+
+# Removing all columns with no variance
+badcolumns <- NULL #making an empty list
+for (columns in 1:length(df)){ #every column in df
+  if (is.factor(df[,columns])){ #is the column a factor?
+    # print(columns)
+    if(uniqueN(df[,columns])<2){ #does the column have below 2 levels?
+      bad_column_name <- colnames(df)[columns] #add the column name to a list of bad columns
+      badcolumns <- c(badcolumns, bad_column_name) #combine it with the existing list
+    }
+  }
+  if (is.numeric(df[,columns])){ #is the column numeric?
+    # print(columns)
+    if(var(df[,columns], na.rm = T)==0){ #is variance 0?
+      bad_column_name <- colnames(df)[columns]  #add the column name to a list of bad columns
+      badcolumns <- c(badcolumns, bad_column_name)#combine it with the existing list
+    }  
+  }
+}
+badcolumns
+
+# Select all columns, except those with colnames that appear in badcolumns
+df <- df[ ,!(colnames(df) %in% badcolumns)]
+
+# Select the columns we need + predictor variables. Don't keep the rest
+preds <- colnames(df[,10:length(colnames(df))])
+df <- df[,c("ID","Study","Diagnosis","Trial","Gender","Age","Language", preds)]
+length(colnames(df[,preds]))
+```
+
+Understand the data
+```{r}
+# Comparing number of ID's in both demo and output
+length(unique(demo[demo$Diagnosis == "td","ID"]))
+length(unique(demo[demo$Diagnosis == "sz","ID"]))
+
+length(unique(output[output$Diagnosis == "td","ID"]))
+length(unique(output[output$Diagnosis == "sz","ID"]))
+
+length(unique(df[df$Diagnosis == "td","ID"]))
+length(unique(df[df$Diagnosis == "sz","ID"]))
+# We end up having fewer participants in the output and df, than demo - but they match, so we have data on all participants
+
+################################## Gender and diagnosis ##################################
+df %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+
+################################## WITHIN TD ##################################
+# Mean, SD and range of ages
+mean(na.omit(df[df$Diagnosis == "td", "Age"]))
+sd(na.omit(df[df$Diagnosis == "td", "Age"]))
+range(na.omit(df[df$Diagnosis == "td", "Age"]))
+
+################################## WIHTIN SZ ##################################
+# Mean, SD and range of ages
+mean(na.omit(df[df$Diagnosis == "sz", "Age"]))
+sd(na.omit(df[df$Diagnosis == "sz", "Age"]))
+range(na.omit(df[df$Diagnosis == "sz", "Age"]))
+```
+
+
+# Splitting the data into test and training
+```{r}
+df$ID <- as.factor(df$ID)
+
+partitions <- partition(
+data = df,
+p = 0.2,
+cat_col = c("Diagnosis", "Gender"),
+id_col = "ID"
+)
+
+holdout <- as.data.frame(partitions[1])
+train <- as.data.frame(partitions[2])
+
+# Deleting rows with all NA's:
+holdout <- as.data.frame(holdout[!is.na(holdout$ID),])
+train <- as.data.frame(train[!is.na(train$ID),])
+
+rm(demo, output)
+```
+
+Checking that the partitioning has been successful
+```{r}
+#Check if it fits with rows:
+nrow(holdout)
+nrow(train)
+nrow(train)+nrow(holdout)
+nrow(df)
+
+# Checking if some ID's appear in both partitions
+holdout$ID %in% train$ID
+
+# Checking number of Males and Females of each Diagnosis, before partitioning
+df %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+
+# Checking number of Males and Females of each Diagnosis, in Train and Holdout
+train %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+holdout %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+```
+
+
+# Normalizing data and deleting rows that shan't be needed
+```{r}
+# Check which columns should be normalized
+colnames(train[,1:8])
+colnames(holdout[,1:8])
+
+length(colnames(train))-7
+length(preds)
+
+#########################################
+## For train
+# Normalize all predictive features
+for (i in preds){
+  train[,i] <- as.numeric(train[,i])
+  minimum <- min(train[,i])
+  maximum <- max(train[,i])
+  normalized_column <- (train[,i] - minimum)/(maximum-minimum)
+  train[,i] <- normalized_column
+}
+
+#########################################
+## For holdout
+# Normalize all predictive features
+for (i in preds){
+  holdout[,i] <- as.numeric(holdout[,i])
+  minimum <- min(train[,i])
+  maximum <- max(train[,i])
+  normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
+  holdout[,i] <- normalized_column
+}
+
+```
+
+Divide the train into 5 folds
+```{r}
+# Adding column with fold, taking diagnosis, gender and id into account
+train <- fold(data = train, k = 5, cat_col = c("Diagnosis", "Gender"), id_col = "ID")
+
+# making sure the col is in the beginning, and that it has a better name
+train <- train %>%
+  select(.folds, everything())
+colnames(train)[1] <- "fold"
+
+# Checking the size of the different folds
+train %>% group_by(fold) %>% summarise(n=n())
+
+```
+
+Feature selection, using cross validation
+```{r}
+# Below is hashtagged out, because it takes a long time to run 
+
+# features <- NULL
+# 
+# for (fold in 1:length(unique(train$fold))){
+#   x <- as.matrix(train[train$fold != fold, preds])
+#   y <- train[train$fold != fold, "Diagnosis"]
+# 
+#   y <- as.list(y)
+#   y <- y[[1]]
+# 
+# 
+#   lasso_cv <- cv.glmnet(x, y,
+#                       family ="binomial", # dependent is class of 2 levels
+#                       type.measure = "class", # means we're penalizing on the basis of misclassification error
+#                       alpha = 1 #means we're doing LASSO, not ridge
+#                       # lambda = lambdas_to_try,
+#                       # standardize = F,
+#                       # nfolds = 6, #6 folds means LOOCV
+#                       )
+# 
+#   lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%
+#       filter(lambda == lasso_cv$lambda.1se,
+#              term != "(Intercept)") %>%
+#       select(term, estimate) %>% # maybe it arranges with absolute values already
+#       mutate(abs = abs(estimate),
+#              term = str_remove_all(term, "`")) %>%
+#       filter(abs > 0) %>% arrange(desc(abs))
+# 
+#   lasso_coef_for_fold <- lasso_coef
+#   lasso_coef_for_fold$fold <- paste(fold)
+# 
+#   features <- rbind(features,lasso_coef_for_fold)
+# }
+# 
+# write.csv(features, "./csv_files/all_features.csv")
+# write.csv(train, "./csv_files/full_train_all_features.csv")
+# write.csv(holdout, "./csv_files/full_holdout_all_features.csv")
+train <- read.csv("./csv_files/full_train_all_features.csv")
+holdout <- read.csv("./csv_files/full_holdout_all_features.csv")
+features <- read.csv("./csv_files/all_features.csv")
+
+#df instead of tibble
+features <- as.data.frame(features)
+
+# Preparing empty dataframes
+train1 <- NULL
+train2 <- NULL
+train3 <- NULL
+train4 <- NULL
+train5 <- NULL
+
+# Loop that creates a dataset with the full training data, but only taking columns that appear in list of features (and ID + stuff)
+for (foldz in 1:length(unique(train$fold))){ # for each fold
+  train_fold_i <- train[,c("ID", "Gender", "Diagnosis", # take train data, with the relevant columns
+                                    colnames(train[,(colnames(train) %in% 
+                                                       features[features$fold == foldz, "term"])]))] 
+  # load each fold into different datasets
+  if (foldz == 1){
+    train1 <- train_fold_i
+  }
+  else if (foldz == 2){
+    train2 <- train_fold_i
+  }
+  else if (foldz == 3){
+    train3 <- train_fold_i
+  }
+  else if (foldz == 4){
+    train4 <- train_fold_i
+  }
+  else if (foldz == 5){
+    train5 <- train_fold_i
+  }
+}
+
+# Write a csv for all datasets
+write.csv(train1, "./csv_files/train1.csv")
+write.csv(train2, "./csv_files/train2.csv")
+write.csv(train3, "./csv_files/train3.csv")
+write.csv(train4, "./csv_files/train4.csv")
+write.csv(train5, "./csv_files/train5.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+features_fold_1 <- features %>% filter(fold == 1)
+train_fold_1 <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(train) %in% features_fold_1$term)]))] 
+
+
+# Making a dataframe with ID, Gender, Diagnosis and all predictors that we are going to use.
+train <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(train) %in% lasso_coef$term)]))] 
+holdout <- holdout[,c("ID", "Gender", "Diagnosis", colnames(holdout[,(colnames(holdout) %in% lasso_coef$term)]))]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+features[1:10,1]
+
+train[,preds] <- sapply(train[,preds], as.numeric)
+
+x <- as.matrix(train[,preds])
+y <- train[,"Diagnosis"]
+
+y <- as.list(y)
+as.numeric(y)
+y <- y[[1]]
+
+
+
+lasso_cv <- cv.glmnet(x, y,
+                      family ="binomial", # dependent is class of 2 levels
+                      type.measure = "class", # means we're penalizing on the basis of misclassification error
+                      alpha = 1 #means we're doing LASSO, not ridge
+                      # lambda = lambdas_to_try,
+                      # standardize = F,
+                      # nfolds = 6, #6 folds means LOOCV
+)
+
+# Getting the coefficients for all the parameters that we have kept
+lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%  
+  filter(lambda == lasso_cv$lambda.1se,
+         term != "(Intercept)") %>% 
+  select(term, estimate) %>%  #maybe it arranges with absolute values already
+  mutate(abs = abs(estimate),
+         term = str_remove_all(term, "`")) %>% 
+  filter(abs > 0) %>% arrange(desc(abs))
+
+
+plot(lasso_cv)
+lasso_cv$lambda.min
+lasso_cv$lambda.1se #We'll use lambda.1se, to have a simpler model which is almost as good as the one with the minimum classification error.
+# 10:00 https://www.youtube.com/watch?v=ctmNq7FgbvI&ab_channel=StatQuestwithJoshStarmer for explanation as to why.
+
+## To understand the code:
+# https://www.youtube.com/watch?v=_IvAubTDQME&ab_channel=DavidRobinson
+
+#Plotting
+tidy(lasso_cv$glmnet.fit) %>%
+  filter(lambda == lasso_cv$lambda.1se,
+         term != "(Intercept)") %>% #selecting coefficients that are not the intercept
+  mutate(term = fct_reorder(term, estimate)) %>% #this should reorder it to descending but not sure whether it does it
+  ggplot(aes(term, estimate, fill = estimate > 0)) + #applying different colors to estimates above and below 0 
+  geom_col() +
+  theme_minimal() +
+  coord_flip() +
+  labs(y = "Estimated effect") +
+  theme(legend.position = "none")
+
+# Getting the coefficients for all the parameters that we have kept
+lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%  
+  filter(lambda == lasso_cv$lambda.1se,
+         term != "(Intercept)") %>% 
+  select(term, estimate) %>%  #maybe it arranges with absolute values already
+  mutate(abs = abs(estimate),
+         term = str_remove_all(term, "`")) %>% 
+  filter(abs > 0) %>% arrange(desc(abs))
+
+#Making a dataframe with ID, Gender, Diagnosis and all predictors that we are going to use.
+train <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(train) %in% lasso_coef$term)]))] 
+holdout <- holdout[,c("ID", "Gender", "Diagnosis", colnames(holdout[,(colnames(holdout) %in% lasso_coef$term)]))]
+```
+
+Writing .csv files with the dataframes for SciKit-Learn
+```{r}
+write.csv(train, "./csv_files/train_selected_features.csv")
+write.csv(holdout, "./csv_files/test_selected_features.csv")
+
+```
+
+
+
+
+
+
+OLD:
+Feature selection, using cross validation
+```{r}
+Feature selection, using cross validation
+```{r}
+features <- NULL
+
+for (fold in 1:length(unique(train$fold))){
+  x <- as.matrix(train[train$fold == fold, preds])
+  y <- train[train$fold == fold, "Diagnosis"]
+  
+  y <- as.list(y)
+  y <- y[[1]]
+
+
+  lasso_cv <- cv.glmnet(x, y,
+                      family ="binomial", # dependent is class of 2 levels
+                      type.measure = "class", # means we're penalizing on the basis of misclassification error
+                      alpha = 1 #means we're doing LASSO, not ridge
+                      # lambda = lambdas_to_try,
+                      # standardize = F,
+                      # nfolds = 6, #6 folds means LOOCV
+                      )
+
+  lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%
+      filter(lambda == lasso_cv$lambda.1se,
+             term != "(Intercept)") %>%
+      select(term, estimate) %>% # maybe it arranges with absolute values already
+      mutate(abs = abs(estimate),
+             term = str_remove_all(term, "`")) %>%
+      filter(abs > 0) %>% arrange(desc(abs))
+  
+  lasso_coef_for_fold <- lasso_coef
+  lasso_coef_for_fold$fold <- paste(fold)
+  
+  features <- rbind(features,lasso_coef_for_fold)
+}
+
+# Create 5 dataframes, with only features from 1 fold, but data from all folds
+
+```
+

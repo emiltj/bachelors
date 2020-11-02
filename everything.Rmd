@@ -56,7 +56,6 @@ getwd()
 
 library("pacman")
 p_load(farff, foreign, RWeka, data.table, tidyverse, tidymodels, glmnet, caret, e1071, groupdata2)
-
 ```
 
 Features, output:
@@ -259,7 +258,7 @@ train <- as.data.frame(partitions[2])
 holdout <- as.data.frame(holdout[!is.na(holdout$ID),])
 train <- as.data.frame(train[!is.na(train$ID),])
 
-rm(demo, output)
+rm(demo, output, partitions)
 ```
 
 Checking that the partitioning has been successful
@@ -333,11 +332,11 @@ train %>% group_by(fold) %>% summarise(n=n())
 Feature selection, using cross validation
 ```{r}
 # Below is hashtagged out, because it takes a long time to run 
-
 # features <- NULL
 # 
 # for (fold in 1:length(unique(train$fold))){
 #   x <- as.matrix(train[train$fold != fold, preds])
+#   #x <- model.matrix(Diagnosis ~ ., preds)
 #   y <- train[train$fold != fold, "Diagnosis"]
 # 
 #   y <- as.list(y)
@@ -347,10 +346,11 @@ Feature selection, using cross validation
 #   lasso_cv <- cv.glmnet(x, y,
 #                       family ="binomial", # dependent is class of 2 levels
 #                       type.measure = "class", # means we're penalizing on the basis of misclassification error
-#                       alpha = 1 #means we're doing LASSO, not ridge
+#                       alpha = 1, #means we're doing LASSO, not ridge
 #                       # lambda = lambdas_to_try,
 #                       # standardize = F,
-#                       # nfolds = 6, #6 folds means LOOCV
+#                       trace.it = 1,
+#                       nfolds = length(y) #folds equal to the length of the rows (LOO-CV)
 #                       )
 # 
 #   lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%
@@ -363,13 +363,15 @@ Feature selection, using cross validation
 # 
 #   lasso_coef_for_fold <- lasso_coef
 #   lasso_coef_for_fold$fold <- paste(fold)
-# 
-#   features <- rbind(features,lasso_coef_for_fold)
+#   
+#   features <- rbind(features, lasso_coef_for_fold)
 # }
 # 
 # write.csv(features, "./csv_files/all_features.csv")
 # write.csv(train, "./csv_files/full_train_all_features.csv")
 # write.csv(holdout, "./csv_files/full_holdout_all_features.csv")
+
+
 train <- read.csv("./csv_files/full_train_all_features.csv")
 holdout <- read.csv("./csv_files/full_holdout_all_features.csv")
 features <- read.csv("./csv_files/all_features.csv")
@@ -377,47 +379,56 @@ features <- read.csv("./csv_files/all_features.csv")
 #df instead of tibble
 features <- as.data.frame(features)
 
-# Preparing empty dataframes
-train1 <- NULL
-train2 <- NULL
-train3 <- NULL
-train4 <- NULL
-train5 <- NULL
-
+# # Preparing empty dataframes
+# train1 <- NULL
+# train2 <- NULL
+# train3 <- NULL
+# train4 <- NULL
+# train5 <- NULL
+# 
 # Loop that creates a dataset with the full training data, but only taking columns that appear in list of features (and ID + stuff)
-for (foldz in 1:length(unique(train$fold))){ # for each fold
-  train_fold_i <- train[,c("ID", "Gender", "Diagnosis", # take train data, with the relevant columns
-                                    colnames(train[,(colnames(train) %in% 
-                                                       features[features$fold == foldz, "term"])]))] 
-  # load each fold into different datasets
-  if (foldz == 1){
-    train1 <- train_fold_i
-  }
-  else if (foldz == 2){
-    train2 <- train_fold_i
-  }
-  else if (foldz == 3){
-    train3 <- train_fold_i
-  }
-  else if (foldz == 4){
-    train4 <- train_fold_i
-  }
-  else if (foldz == 5){
-    train5 <- train_fold_i
-  }
-}
-
-# Write a csv for all datasets
-write.csv(train1, "./csv_files/train1.csv")
-write.csv(train2, "./csv_files/train2.csv")
-write.csv(train3, "./csv_files/train3.csv")
-write.csv(train4, "./csv_files/train4.csv")
-write.csv(train5, "./csv_files/train5.csv")
-
-
+# for (foldz in 1:length(unique(train$fold))){ # for each fold
+#   train_fold_i <- train[,c("ID", "Gender", "Diagnosis", "fold", # take train data, with the relevant columns
+#                                     colnames(train[,(colnames(train) %in% 
+#                                                        features[features$fold == foldz, "term"])]))] 
+#   # load each fold into different datasets
+#   if (foldz == 1){
+#     train1 <- train_fold_i
+#   }
+#   else if (foldz == 2){
+#     train2 <- train_fold_i
+#   }
+#   else if (foldz == 3){
+#     train3 <- train_fold_i
+#   }
+#   else if (foldz == 4){
+#     train4 <- train_fold_i
+#   }
+#   else if (foldz == 5){
+#     train5 <- train_fold_i
+#   }
+# }
+# 
+# # Write a csv for all datasets
+# write.csv(train1, "./csv_files/train1.csv")
+# write.csv(train2, "./csv_files/train2.csv")
+# write.csv(train3, "./csv_files/train3.csv")
+# write.csv(train4, "./csv_files/train4.csv")
+# write.csv(train5, "./csv_files/train5.csv")
 
 
 
+# Checking that it fits
+train1 <- read.csv("./csv_files/train1.csv")
+
+nrow(train1["fold" == 1,])
+
+
+
+
+train1 %>% filter(fold == 1, Diagnosis == "td") %>% nrow()
+
+115+35+60+101
 
 
 
@@ -425,6 +436,24 @@ write.csv(train5, "./csv_files/train5.csv")
 
 
 
+
+
+
+```
+
+Writing .csv files with the dataframes for SciKit-Learn
+```{r}
+write.csv(train, "./csv_files/train_selected_features.csv")
+write.csv(holdout, "./csv_files/test_selected_features.csv")
+
+```
+
+
+
+
+OLD:
+Lasso regression:
+```{r}
 
 
 features_fold_1 <- features %>% filter(fold == 1)
@@ -521,15 +550,6 @@ lasso_coef <- tidy(lasso_cv$glmnet.fit) %>%
 train <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(train) %in% lasso_coef$term)]))] 
 holdout <- holdout[,c("ID", "Gender", "Diagnosis", colnames(holdout[,(colnames(holdout) %in% lasso_coef$term)]))]
 ```
-
-Writing .csv files with the dataframes for SciKit-Learn
-```{r}
-write.csv(train, "./csv_files/train_selected_features.csv")
-write.csv(holdout, "./csv_files/test_selected_features.csv")
-
-```
-
-
 
 
 

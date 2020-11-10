@@ -221,22 +221,33 @@ length(unique(output[output$Diagnosis == "sz","ID"]))
 
 length(unique(df[df$Diagnosis == "td","ID"]))
 length(unique(df[df$Diagnosis == "sz","ID"]))
-# We end up having fewer participants in the output and df, than demo - but they match, so we have data on all participants
+# We end up having fewer participants in the output and df, than demo - but they match, so we have demo data on all participants
 
-################################## Gender and diagnosis ##################################
+
+#For all studies individually
+################################## Gender, diagnosis and study ##################################
+df %>% .[!duplicated(.$ID),] %>% group_by(Study, Gender, Diagnosis) %>% summarize(count=n())
+
+
+################################## Age, within study and diagnosis ##################################
+df %>% .[!duplicated(.$ID),] %>% group_by(Study, Diagnosis) %>% summarize(count = n(),
+                                                                          mean_age = mean(na.omit(Age)),
+                                                                          sd_age = sd(na.omit(Age)),
+                                                                          max_age = max(na.omit(Age)),
+                                                                          min_age = min(na.omit(Age)))
+# For all studies combined
+################################## Gender, diagnosis and study ##################################
 df %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
 
-################################## WITHIN TD ##################################
-# Mean, SD and range of ages
-mean(na.omit(df[df$Diagnosis == "td", "Age"]))
-sd(na.omit(df[df$Diagnosis == "td", "Age"]))
-range(na.omit(df[df$Diagnosis == "td", "Age"]))
 
-################################## WIHTIN SZ ##################################
-# Mean, SD and range of ages
-mean(na.omit(df[df$Diagnosis == "sz", "Age"]))
-sd(na.omit(df[df$Diagnosis == "sz", "Age"]))
-range(na.omit(df[df$Diagnosis == "sz", "Age"]))
+################################## Age, within study and diagnosis ##################################
+df %>% .[!duplicated(.$ID),] %>% group_by(Diagnosis) %>% summarize(count = n(),
+                                                                          mean_age = mean(na.omit(Age)),
+                                                                          sd_age = sd(na.omit(Age)),
+                                                                          max_age = max(na.omit(Age)),
+                                                                          min_age = min(na.omit(Age)))
+
+
 ```
 
 
@@ -421,24 +432,6 @@ features <- as.data.frame(features)
 # Checking that it fits
 train1 <- read.csv("./csv_files/train1.csv")
 
-nrow(train1["fold" == 1,])
-
-
-
-
-train1 %>% filter(fold == 1, Diagnosis == "td") %>% nrow()
-
-115+35+60+101
-
-
-
-
-
-
-
-
-
-
 ```
 
 Writing .csv files with the dataframes for SciKit-Learn
@@ -447,6 +440,45 @@ write.csv(train, "./csv_files/train_selected_features.csv")
 write.csv(holdout, "./csv_files/test_selected_features.csv")
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -463,24 +495,6 @@ train_fold_1 <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(
 # Making a dataframe with ID, Gender, Diagnosis and all predictors that we are going to use.
 train <- train[,c("ID", "Gender", "Diagnosis", colnames(train[,(colnames(train) %in% lasso_coef$term)]))] 
 holdout <- holdout[,c("ID", "Gender", "Diagnosis", colnames(holdout[,(colnames(holdout) %in% lasso_coef$term)]))]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

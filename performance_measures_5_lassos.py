@@ -93,6 +93,20 @@ conf_matrix_fold4.index = conf_matrix_fold4.index = ['actual_sz', 'actual_td']
 conf_matrix_fold5.columns = conf_matrix_fold5.columns = ['predict_sz', 'predict_td']
 conf_matrix_fold5.index = conf_matrix_fold5.index = ['actual_sz', 'actual_td']
 
+# read the classification reports
+classif_report_fold1
+classif_report_fold2
+classif_report_fold3
+classif_report_fold4
+classif_report_fold5
+
+# read the confusion matrices
+conf_matrix_fold1
+conf_matrix_fold2
+conf_matrix_fold3
+conf_matrix_fold4
+conf_matrix_fold5
+
 # Writing everything to .csv
 SVM_coef.to_csv('./performance_measures_5_lassos/SVM_coef.csv', sep=',', index = True)
 

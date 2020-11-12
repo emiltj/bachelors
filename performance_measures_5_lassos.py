@@ -1,4 +1,3 @@
-# Importing libraries and functions we'll use
 import sklearn as sk
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix
@@ -6,32 +5,39 @@ import matplotlib as plt
 import pandas as pd
 import numpy as np
 
-# Importing all the folds
-train1 = [pd.read_csv('./csv_files/train1.csv'),1]
-train2 = [pd.read_csv('./csv_files/train2.csv'),2]
-train3 = [pd.read_csv('./csv_files/train3.csv'),3]
-train4 = [pd.read_csv('./csv_files/train4.csv'),4]
-train5 = [pd.read_csv('./csv_files/train5.csv'),5]
+train1 = [pd.read_csv('./csv_files/train1.csv', index_col=0),1]
+train2 = [pd.read_csv('./csv_files/train2.csv', index_col=0),2]
+train3 = [pd.read_csv('./csv_files/train3.csv', index_col=0),3]
+train4 = [pd.read_csv('./csv_files/train4.csv', index_col=0),4]
+train5 = [pd.read_csv('./csv_files/train5.csv', index_col=0),5]
 
 ################## Creating a loop, so I won't have to do the below code 5 times ##################
 # Making the datasets into a list
 datasets = [train1, train2, train3, train4, train5]
+
+#creating empty objects to save data in
 classif_reports = ["", "", "", "", ""]
 conf_mtxs = []
 model = SVC(kernel = 'linear')
 SVM_coef = pd.DataFrame(columns = ['predictor_name', 'coef', 'fold'])
 
+#defining which feature set is currently run 
+feature_set = 'performance_measures_5_feature_sets'
+
 for df, n in datasets:
+    # making td into 0 and sz into 1
+    df['Diagnosis'] = df['Diagnosis'].apply(lambda x: 0 if x=='td' else 1) # setting TD as 0 and ASD as 1
+   
     # Divide the data up into train and test
     df_test = df.loc[df['fold'] == n]
     df_train = df.loc[df['fold'] != n]
-    
+
     # Dividing train and test up into predictor variables, and Diagnosis
-    x_train1 = df_train.iloc[:,5:]
+    x_train1 = df_train.iloc[:,4:]
     y_train1 = df_train.loc[:,['ID', 'Diagnosis']]
     y_train1 = y_train1.set_index('ID') # Setting index as ID, to be able to map how well the model predicts on genders
-    
-    x_test1 = df_test.iloc[:,5:]
+
+    x_test1 = df_test.iloc[:,4:]
     y_test1 = df_test.loc[:,['ID', 'Diagnosis']]
     y_test1 = y_test1.set_index('ID') # Setting index as ID, to be able to map how well the model predicts on genders
 
@@ -64,79 +70,30 @@ for df, n in datasets:
     matrixx = confusion_matrix(y_test1, predictions_test1)
     conf_mtxs.append(matrixx)
 
+    #Saving data 
+   
+    #making variables to use in filenames
+    svm_coef_name = "".join(['./performance_measures_5_lassos/', str(feature_set), "_CoefTestFold", ".csv"]) 
+    conf_matrix_name = "".join(['./performance_measures_5_lassos/', str(feature_set),"_ConfusionMatrix", str(n), ".csv"]) 
+    classification_report_name = "".join(['./performance_measures_5_lassos/', str(feature_set),"_ClassificationReport", str(n), ".csv"]) 
+
+
+    # Loading each element (classification_report) of the list of dictionaries, as a dataframe 
+    classif_report_fold = pd.DataFrame(classif_reports[n-1])
+    # Loading each element (classification_report) of the list of dictionaries, as a dataframe
+    conf_matrix_fold = pd.DataFrame(conf_mtxs[n-1])
+    #Give the matrices names for rows and columns
+    conf_matrix_fold.columns = conf_matrix_fold.columns = ['predict_asd', 'predict_td']
+    conf_matrix_fold.index = conf_matrix_fold.index = ['actual_asd', 'actual_td']
+
+    # Writing coefficients to .csv
+    SVM_coef.to_csv(svm_coef_name, sep=',', index = True)
+    # Writing confusion matrices to csv
+    conf_matrix_fold.to_csv(conf_matrix_name, sep=',', index = True)
+    # Writing classification reports to csv
+    classif_report_fold.to_csv(classification_report_name, sep=',', index = True)
+
+
     # The end
-
-
-# Loading each element (classification_report) of the list of dictionaries, as a dataframe 
-classif_report_fold1 = pd.DataFrame(classif_reports[0])
-classif_report_fold2 = pd.DataFrame(classif_reports[1])
-classif_report_fold3 = pd.DataFrame(classif_reports[2])
-classif_report_fold4 = pd.DataFrame(classif_reports[3])
-classif_report_fold5 = pd.DataFrame(classif_reports[4])
-
-# Loading each element (classification_report) of the list of dictionaries, as a dataframe
-conf_matrix_fold1 = pd.DataFrame(conf_mtxs[0])
-conf_matrix_fold2 = pd.DataFrame(conf_mtxs[1])
-conf_matrix_fold3 = pd.DataFrame(conf_mtxs[2])
-conf_matrix_fold4 = pd.DataFrame(conf_mtxs[3])
-conf_matrix_fold5 = pd.DataFrame(conf_mtxs[4])
-
-# Give the matrices names for rows and columns
-conf_matrix_fold1.columns = conf_matrix_fold1.columns = ['predict_sz', 'predict_td']
-conf_matrix_fold1.index = conf_matrix_fold1.index = ['actual_sz', 'actual_td']
-conf_matrix_fold2.columns = conf_matrix_fold2.columns = ['predict_sz', 'predict_td']
-conf_matrix_fold2.index = conf_matrix_fold2.index = ['actual_sz', 'actual_td']
-conf_matrix_fold3.columns = conf_matrix_fold3.columns = ['predict_sz', 'predict_td']
-conf_matrix_fold3.index = conf_matrix_fold3.index = ['actual_sz', 'actual_td']
-conf_matrix_fold4.columns = conf_matrix_fold4.columns = ['predict_sz', 'predict_td']
-conf_matrix_fold4.index = conf_matrix_fold4.index = ['actual_sz', 'actual_td']
-conf_matrix_fold5.columns = conf_matrix_fold5.columns = ['predict_sz', 'predict_td']
-conf_matrix_fold5.index = conf_matrix_fold5.index = ['actual_sz', 'actual_td']
-
-# read the classification reports
-classif_report_fold1
-classif_report_fold2
-classif_report_fold3
-classif_report_fold4
-classif_report_fold5
-
-# read the confusion matrices
-conf_matrix_fold1
-conf_matrix_fold2
-conf_matrix_fold3
-conf_matrix_fold4
-conf_matrix_fold5
-
-# Writing everything to .csv
-SVM_coef.to_csv('./performance_measures_5_lassos/SVM_coef.csv', sep=',', index = True)
-
-# Writing confusion matrices to csv
-conf_matrix_fold1.to_csv('./performance_measures_5_lassos/conf_matrix_fold1.csv', sep=',', index = True)
-conf_matrix_fold2.to_csv('./performance_measures_5_lassos/conf_matrix_fold2.csv', sep=',', index = True)
-conf_matrix_fold3.to_csv('./performance_measures_5_lassos/conf_matrix_fold3.csv', sep=',', index = True)
-conf_matrix_fold4.to_csv('./performance_measures_5_lassos/conf_matrix_fold4.csv', sep=',', index = True)
-conf_matrix_fold5.to_csv('./performance_measures_5_lassos/conf_matrix_fold5.csv', sep=',', index = True)
-
-# Writing classification reports to csv
-classif_report_fold1.to_csv('./performance_measures_5_lassos/classif_report_fold1.csv', sep=',', index = True)
-classif_report_fold2.to_csv('./performance_measures_5_lassos/classif_report_fold2.csv', sep=',', index = True)
-classif_report_fold3.to_csv('./performance_measures_5_lassos/classif_report_fold3.csv', sep=',', index = True)
-classif_report_fold4.to_csv('./performance_measures_5_lassos/classif_report_fold4.csv', sep=',', index = True)
-classif_report_fold5.to_csv('./performance_measures_5_lassos/classif_report_fold5.csv', sep=',', index = True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

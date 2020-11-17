@@ -289,8 +289,8 @@ holdout$ID %in% train$ID
 df %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
 
 # Checking number of Males and Females of each Diagnosis, in Train and Holdout
-train %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
-holdout %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+train_partition <- train %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+holdout_partition <- holdout %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
 ```
 
 
@@ -488,5 +488,7 @@ write.csv(train5, "./csv_files/train5.csv")
 write.csv(features, "./csv_files/LASSO_features_all_folds.csv") # a dataframe with LASSO features after doing LASSO + coef + fold
 write.csv(train, "./csv_files/train.csv") # the entire dataframe with all 988 features, train split
 write.csv(holdout, "./csv_files/holdout.csv") # the entire dataframe with all 988 features, holdout split
+write.csv(train_partition, "./csv_files/train_partition_summarized.csv")
+write.csv(holdout_partition, "./csv_files/holdout_partition_summarized.csv")
 ```
 

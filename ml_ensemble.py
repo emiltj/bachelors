@@ -4,17 +4,101 @@ from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib as plt
 import pandas as pd
 import numpy as np
+import os
+
+os.getcwd()
+
+# Load train and test data
+data1 = [pd.read_csv('./csv_files/train1.csv', index_col=0), 1, pd.read_csv('./csv_files/holdout1.csv', index_col=0)]
+data2 = [pd.read_csv('./csv_files/train2.csv', index_col=0), 2, pd.read_csv('./csv_files/holdout2.csv', index_col=0)]
+data3 = [pd.read_csv('./csv_files/train3.csv', index_col=0), 3, pd.read_csv('./csv_files/holdout3.csv', index_col=0)]
+data4 = [pd.read_csv('./csv_files/train4.csv', index_col=0), 4, pd.read_csv('./csv_files/holdout4.csv', index_col=0)]
+data5 = [pd.read_csv('./csv_files/train5.csv', index_col=0), 5, pd.read_csv('./csv_files/holdout5.csv', index_col=0)]
+
+# Take the lists and include them in a list
+datasets = [data1, data2, data3, data4, data5]
+
+datasets[0][2]
+
+# Defining the model we're using
+model = SVC(kernel = 'linear')
+
+# Preparing a dataframe for the predictions
+# predictions = pd.DataFrame(columns = ['ID', "diagnosis_real"]) 
+
+predictions = pd.DataFrame({'ID' : datasets[0][2].loc[:,'ID'], 'diagnosis_real' : datasets[0][2].loc[:,'Diagnosis']})
+
+# Checking the datasets
+datasets[0][0].iloc[:,0:10]
+datasets[0][2].iloc[:,0:10]
+
+for train, k, holdout in datasets:
+    # making td into 0 and sz into 1 for both train and holdout
+    train['Diagnosis'] = train['Diagnosis'].apply(lambda x: 0 if x=='td' else 1) # setting td as 0 and ASD as 1
+    holdout['Diagnosis'] = holdout['Diagnosis'].apply(lambda x: 0 if x=='td' else 1) # setting td as 0 and ASD as 1
 
 
-train1 = [pd.read_csv('./csv_files/train1.csv', index_col=0),1]
-train2 = [pd.read_csv('./csv_files/train2.csv', index_col=0),2]
-train3 = [pd.read_csv('./csv_files/train3.csv', index_col=0),3]
-train4 = [pd.read_csv('./csv_files/train4.csv', index_col=0),4]
-train5 = [pd.read_csv('./csv_files/train5.csv', index_col=0),5]
+    # Cutting my training data up into x and y (so the model can be fit)
+    x = train.iloc[:,4:]
+    y = train.loc[:,['ID', 'Diagnosis']]
+    y = y.set_index('ID') # Setting index as ID, to be able to map how well the model predicts on genders
+
+    # Cutting my testing data up into x and y (so the y's can be predicted)
+    x_holdout = holdout.iloc[:,3:]
+    y_holdout = holdout.loc[:,['ID', 'Diagnosis']]
+    y_holdout = y_holdout.set_index('ID') # Setting index as ID, to be able to map how well the model predicts on genders
+
+    # Fit the data onto the model
+    model.fit(x, y)
+
+    # Predict the test set (on the basis of predictor variables), using the fitted model
+    y_predicted = model.predict(x_holdout)
+    
+    # To test how it predicts!!
+    print(y_predicted)
+    
+    # ABOVE WORKS, THIS COULD BE ADDED TO LOOP:
+    # Make a dataframe with ID and Real Diagnosis
+    # predictions = predictions.append(pd.DataFrame({'ID' : holdout.loc[:,'ID'], 'diagnosis_real' : holdout.loc[:,'Diagnosis']}), ignore_index = True)
+    # predictions = pd.DataFrame({'ID' : holdout.loc[:,'ID'], 'diagnosis_real' : holdout.loc[:,'Diagnosis']})
+    print(len(predictions['ID']))
+
+    # Make a unique name for each iteration
+    new_col_name = "".join(["diagnosis_predic_", str(k)])
+    
+    # Add a column to the dataframe (with unique name, and the predictions)
+    predictions[new_col_name] = y_predicted
+
+# Make sure diagnosis_real column also has 1's and 0's instead of 'td' and 'sz'
+predictions['diagnosis_real'] = predictions['diagnosis_real'].apply(lambda x: 0 if x=='td' else 1)
+
+# For each row, get a count of 1's and 0's in the new columns
+count_of_1_predictions = predictions.iloc[:,-5:].apply(pd.Series.value_counts, axis=1)[1].fillna(0)
+predictions['diagnosis_predic_ensemble'] = [0 if x < 3 else 1 for x in count_of_1_predictions]
+
+predictions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ################## Creating a loop, so I won't have to do the below code 5 times ##################
-# Making the datasets into a list
-datasets = [train1, train2, train3, train4, train5]
 
 #creating empty objects to save data in
 classif_reports = ["", "", "", "", ""]

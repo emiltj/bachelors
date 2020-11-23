@@ -291,6 +291,8 @@ df %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count
 # Checking number of Males and Females of each Diagnosis, in Train and Holdout
 train_partition <- train %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
 holdout_partition <- holdout %>% .[!duplicated(.$ID),] %>% group_by(Gender, Diagnosis) %>% summarize(count=n())
+train_partition
+holdout_partition
 ```
 
 
@@ -363,20 +365,20 @@ for (fold in 1:length(unique(train$fold))){
                       # lambda = lambdas_to_try,
                       # standardize = F,
                       trace.it = 1,
-                      nfolds = length(y) #folds equal to the length of the rows (LOO-CV)
+                      nfolds = 10 # length(y) #folds equal to the length of the rows (LOO-CV)
                       )
   
   # Plotting lasso_cv (lambda plot)
-  plot(lasso_cv)
-  
   # Save each of the folds lambda_plots into folder
   png(file = paste('./cv_glmnet_plots/lambda_plots/', 'lambda_plot_', fold, ".png", sep=''))
+  plot(lasso_cv)
+  dev.off()
   
   # Plot each of the folds' coefs
   coef_plot <- tidy(lasso_cv$glmnet.fit) %>%
   filter(lambda == lasso_cv$lambda.1se,
          term != "(Intercept)") %>% #selecting coefficients that are not the intercept
-  mutate(term = fct_reorder(term, estimate)) %>% #this should reorder it to descending but not sure whether it does it
+  mutate(term = fct_reorder(term, estimate)) %>% #this should reorder it to descending
   ggplot(aes(term, estimate, fill = estimate > 0)) + #applying different colors to estimates above and below 0 
   geom_col() +
   theme_minimal() +
@@ -420,7 +422,7 @@ for (foldz in 1:length(unique(train$fold))){ # for each fold
   train_fold_i <- train[,c("ID", "Gender", "Diagnosis", "fold", # take train data, with the relevant columns
                                     colnames(train[,(colnames(train) %in%
                                                        features[features$fold == foldz, "term"])]))]
-  
+
 # load each fold into different datasets
   if (foldz == 1){
     train1 <- train_fold_i

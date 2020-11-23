@@ -15,22 +15,25 @@ data3 = [pd.read_csv('./csv_files/train3.csv', index_col=0), 3, pd.read_csv('./c
 data4 = [pd.read_csv('./csv_files/train4.csv', index_col=0), 4, pd.read_csv('./csv_files/holdout4.csv', index_col=0)]
 data5 = [pd.read_csv('./csv_files/train5.csv', index_col=0), 5, pd.read_csv('./csv_files/holdout5.csv', index_col=0)]
 
+data1[0]
+data2[0]
+data1[2]
+data2[2]
+
 # Take the lists and include them in a list
 datasets = [data1, data2, data3, data4, data5]
 
-datasets[0][2]
+# creating empty list of classif_reports - for testing!!!
+classif_reports = ["", "", "", "", ""]
 
 # Defining the model we're using
 model = SVC(kernel = 'linear')
 
 # Preparing a dataframe for the predictions
-# predictions = pd.DataFrame(columns = ['ID', "diagnosis_real"]) 
+predictions = pd.DataFrame({'ID' : datasets[0][2].loc[:,'ID'], 'sex' : datasets[0][2].loc[:, 'Gender'] , 'diagnosis_real' : datasets[0][2].loc[:,'Diagnosis']})
 
-predictions = pd.DataFrame({'ID' : datasets[0][2].loc[:,'ID'], 'diagnosis_real' : datasets[0][2].loc[:,'Diagnosis']})
-
-# Checking the datasets
-datasets[0][0].iloc[:,0:10]
-datasets[0][2].iloc[:,0:10]
+# Make sure diagnosis_real column also has 1's and 0's instead of 'td' and 'sz'
+predictions['diagnosis_real'] = predictions['diagnosis_real'].apply(lambda x: 0 if x=='td' else 1)
 
 for train, k, holdout in datasets:
     # making td into 0 and sz into 1 for both train and holdout
@@ -57,11 +60,16 @@ for train, k, holdout in datasets:
     # To test how it predicts!!
     print(y_predicted)
     
+    # To test how they predict!!
+    report = classification_report(y_holdout, y_predicted)#, output_dict = True)
+    report_number = k-1
+    classif_reports[report_number] = report
+    
     # ABOVE WORKS, THIS COULD BE ADDED TO LOOP:
     # Make a dataframe with ID and Real Diagnosis
     # predictions = predictions.append(pd.DataFrame({'ID' : holdout.loc[:,'ID'], 'diagnosis_real' : holdout.loc[:,'Diagnosis']}), ignore_index = True)
     # predictions = pd.DataFrame({'ID' : holdout.loc[:,'ID'], 'diagnosis_real' : holdout.loc[:,'Diagnosis']})
-    print(len(predictions['ID']))
+    #print(len(predictions['ID']))
 
     # Make a unique name for each iteration
     new_col_name = "".join(["diagnosis_predic_", str(k)])
@@ -69,8 +77,8 @@ for train, k, holdout in datasets:
     # Add a column to the dataframe (with unique name, and the predictions)
     predictions[new_col_name] = y_predicted
 
-# Make sure diagnosis_real column also has 1's and 0's instead of 'td' and 'sz'
-predictions['diagnosis_real'] = predictions['diagnosis_real'].apply(lambda x: 0 if x=='td' else 1)
+# For testing!!
+print(classif_reports[1])
 
 # For each row, get a count of 1's and 0's in the new columns
 count_of_1_predictions = predictions.iloc[:,-5:].apply(pd.Series.value_counts, axis=1)[1].fillna(0)
@@ -78,12 +86,38 @@ predictions['diagnosis_predic_ensemble'] = [0 if x < 3 else 1 for x in count_of_
 
 predictions
 
+# Performance of ensemble_model on all participants
+classification_report_ensemble = pd.DataFrame(classification_report(predictions['diagnosis_real'], predictions['diagnosis_predic_ensemble'], output_dict = True))
+conf_matrix_ensemble = pd.DataFrame(confusion_matrix(predictions['diagnosis_real'], predictions['diagnosis_predic_ensemble']))
+
+# Performance of ensemble_model on women
+predictions_female = predictions[predictions['sex'] == 'F']
+classification_report_ensemble_female = pd.DataFrame(classification_report(predictions_female['diagnosis_real'], predictions_female['diagnosis_predic_ensemble'], output_dict = True))
+conf_matrix_ensemble_female = pd.DataFrame(confusion_matrix(predictions_female['diagnosis_real'], predictions_female['diagnosis_predic_ensemble']))
+
+# Performance of ensemble_model on men
+predictions_male = predictions[predictions['sex'] == 'M']
+classification_report_ensemble_male = pd.DataFrame(classification_report(predictions_male['diagnosis_real'], predictions_male['diagnosis_predic_ensemble'], output_dict = True))
+conf_matrix_ensemble_male = pd.DataFrame(confusion_matrix(predictions_male['diagnosis_real'], predictions_male['diagnosis_predic_ensemble']))
+
+# Is the order shit? 
 
 
+############# Results #############
+# All predictions
+predictions
 
+# Performance of ensemble
+classification_report_ensemble
+conf_matrix_ensemble
 
+# Performance of ensemble for female
+classification_report_ensemble_female
+conf_matrix_ensemble_female
 
-
+#Performance of ensemble for male
+classification_report_ensemble_male
+conf_matrix_ensemble_male
 
 
 

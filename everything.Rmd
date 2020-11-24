@@ -6,48 +6,54 @@ output: html_document
 ---
 Create td_output from .arff files
 ```{r}
-setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/td_extracted_features/")
-getwd()
+# Works, just don't want it to run when I run all
 
-library("pacman")
-p_load(farff, foreign, RWeka, data.table, tidyverse)
 
-getwd()
-temp = list.files(path =".", pattern="_td_output.arff")
-temp
-myfiles = lapply(temp, read.arff)
-td <- rbindlist(myfiles)
-td$file <- temp
-td$Diagnosis <- "td"
-
-td <- td %>%
-  select(file, Diagnosis, everything())
-
-# Writing a csv with all the TD-data
-write.csv(td, "../csv_files/td_features_extracted.csv")
+# setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/td_extracted_features/")
+# getwd()
+# 
+# library("pacman")
+# p_load(farff, foreign, RWeka, data.table, tidyverse)
+# 
+# getwd()
+# temp = list.files(path =".", pattern="_td_output.arff")
+# temp
+# myfiles = lapply(temp, read.arff)
+# td <- rbindlist(myfiles)
+# td$file <- temp
+# td$Diagnosis <- "td"
+# 
+# td <- td %>%
+#   select(file, Diagnosis, everything())
+# 
+# # Writing a csv with all the TD-data
+# write.csv(td, "../csv_files/td_features_extracted.csv")
 ```
 
 Create sz_output from .arff files
 ```{r}
-setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/sz_extracted_features/")
-getwd()
+# Works, just don't want it to run when I run all
 
-library("pacman")
-p_load(farff, foreign, RWeka, data.table, tidyverse)
 
-getwd()
-temp = list.files(path =".", pattern="_sz_output.arff")
-temp
-myfiles = lapply(temp, read.arff)
-sz <- rbindlist(myfiles)
-sz$file <- temp
-sz$Diagnosis <- "sz"
-
-sz <- sz %>%
-  select(file, Diagnosis, everything())
-
-# Writing a csv with all the sz-data
-write.csv(sz, "../csv_files/sz_features_extracted.csv")
+# setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_project/data/danish_denoised/sz_extracted_features/")
+# getwd()
+# 
+# library("pacman")
+# p_load(farff, foreign, RWeka, data.table, tidyverse)
+# 
+# getwd()
+# temp = list.files(path =".", pattern="_sz_output.arff")
+# temp
+# myfiles = lapply(temp, read.arff)
+# sz <- rbindlist(myfiles)
+# sz$file <- temp
+# sz$Diagnosis <- "sz"
+# 
+# sz <- sz %>%
+#   select(file, Diagnosis, everything())
+# 
+# # Writing a csv with all the sz-data
+# write.csv(sz, "../csv_files/sz_features_extracted.csv")
 ```
 
 ```{r}
@@ -55,7 +61,7 @@ setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/bachelors_pr
 getwd()
 
 library("pacman")
-p_load(farff, foreign, RWeka, data.table, tidyverse, tidymodels, glmnet, caret, e1071, groupdata2)
+p_load(farff, foreign, RWeka, data.table, tidyverse, tidymodels, glmnet, caret, e1071, groupdata2, caret)
 # citation(package = "groupdata2", lib.loc = NULL, auto = NULL)
 
 ```
@@ -309,27 +315,55 @@ colnames(holdout[,1:8])
 length(colnames(train))-7
 length(preds)
 
-#########################################
-## For train
-# Normalize all predictive features
-for (i in preds){
-  train[,i] <- as.numeric(train[,i])
-  minimum <- min(train[,i])
-  maximum <- max(train[,i])
-  normalized_column <- (train[,i] - minimum)/(maximum-minimum)
-  train[,i] <- normalized_column
-}
+pp = preProcess(train[,preds], method = "range")
+train[,preds] <- predict(pp, train[,preds])
+holdout[,preds] <- predict(pp, holdout[,preds])
 
-#########################################
-## For holdout
-# Normalize all predictive features
-for (i in preds){
-  holdout[,i] <- as.numeric(holdout[,i])
-  minimum <- min(train[,i])
-  maximum <- max(train[,i])
-  normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
-  holdout[,i] <- normalized_column
-}
+# #########################################
+# ## For train
+# # Normalize all predictive features
+# for (i in preds){
+#   train[,i] <- as.numeric(train[,i])
+#   minimum <- min(df[,i])
+#   maximum <- max(df[,i])
+#   normalized_column <- (train[,i] - minimum)/(maximum-minimum)
+#   train[,i] <- normalized_column
+# }
+# 
+# #########################################
+# ## For holdout
+# # Normalize all predictive features
+# for (i in preds){
+#   holdout[,i] <- as.numeric(holdout[,i])
+#   minimum <- min(df[,i])
+#   maximum <- max(df[,i])
+#   normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
+#   holdout[,i] <- normalized_column
+# }
+
+# 
+# 
+# #########################################
+# ## For train
+# # Normalize all predictive features
+# for (i in preds){
+#   train[,i] <- as.numeric(train[,i])
+#   minimum <- min(train[,i])
+#   maximum <- max(train[,i])
+#   normalized_column <- (train[,i] - minimum)/(maximum-minimum)
+#   train[,i] <- normalized_column
+# }
+# 
+# #########################################
+# ## For holdout
+# # Normalize all predictive features
+# for (i in preds){
+#   holdout[,i] <- as.numeric(holdout[,i])
+#   minimum <- min(train[,i])
+#   maximum <- max(train[,i])
+#   normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
+#   holdout[,i] <- normalized_column
+# }
 
 ```
 
@@ -378,7 +412,7 @@ for (fold in 1:length(unique(train$fold))){
                       # lambda = lambdas_to_try,
                       # standardize = F,
                       trace.it = 1,
-                      nfolds = 6 # length(y) #folds equal to the length of the rows (LOO-CV)
+                      nfolds = 5 # length(y) #folds equal to the length of the rows (LOO-CV)
                       )
   
   # Plotting lasso_cv (lambda plot)

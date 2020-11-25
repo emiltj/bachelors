@@ -38,6 +38,7 @@ for train, n, holdout in datasets:
     # Predict the holdout set (on the basis of predictor variables), using the fitted model
     y_predictions = model.predict(x_holdout)
 
+    # Print to keep track
     print(y_predictions)
 
     # Make a unique name for each iteration
@@ -115,8 +116,6 @@ classification_report_ensemble_male = pd.DataFrame(classification_report(predict
 conf_matrix_ensemble_male = pd.DataFrame(confusion_matrix(predictions_male['diagnosis_real'], predictions_male['diagnosis_predic_ensemble']))
 classification_report_ensemble_male.to_csv('./performance/holdout/ensemble/sex/male_classification_report.csv', sep = ",", index = True)
 conf_matrix_ensemble_male.to_csv('./performance/holdout/ensemble/sex/male_confusion_matrix.csv', sep = ",", index = True)
-
-
 
 
 

@@ -315,55 +315,9 @@ colnames(holdout[,1:8])
 length(colnames(train))-7
 length(preds)
 
-pp = preProcess(train[,preds], method = "range")
-train[,preds] <- predict(pp, train[,preds])
-holdout[,preds] <- predict(pp, holdout[,preds])
-
-# #########################################
-# ## For train
-# # Normalize all predictive features
-# for (i in preds){
-#   train[,i] <- as.numeric(train[,i])
-#   minimum <- min(df[,i])
-#   maximum <- max(df[,i])
-#   normalized_column <- (train[,i] - minimum)/(maximum-minimum)
-#   train[,i] <- normalized_column
-# }
-# 
-# #########################################
-# ## For holdout
-# # Normalize all predictive features
-# for (i in preds){
-#   holdout[,i] <- as.numeric(holdout[,i])
-#   minimum <- min(df[,i])
-#   maximum <- max(df[,i])
-#   normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
-#   holdout[,i] <- normalized_column
-# }
-
-# 
-# 
-# #########################################
-# ## For train
-# # Normalize all predictive features
-# for (i in preds){
-#   train[,i] <- as.numeric(train[,i])
-#   minimum <- min(train[,i])
-#   maximum <- max(train[,i])
-#   normalized_column <- (train[,i] - minimum)/(maximum-minimum)
-#   train[,i] <- normalized_column
-# }
-# 
-# #########################################
-# ## For holdout
-# # Normalize all predictive features
-# for (i in preds){
-#   holdout[,i] <- as.numeric(holdout[,i])
-#   minimum <- min(train[,i])
-#   maximum <- max(train[,i])
-#   normalized_column <- (holdout[,i] - minimum)/(maximum-minimum)
-#   holdout[,i] <- normalized_column
-# }
+# pp = preProcess(train[,preds], method = "range")
+# train[,preds] <- predict(pp, train[,preds])
+# holdout[,preds] <- predict(pp, holdout[,preds])
 
 ```
 

@@ -21,10 +21,7 @@ conf_mtxs = []
 model = SVC(kernel = 'linear', class_weight = 'balanced')
 SVM_coef = pd.DataFrame(columns = ['predictor_name', 'coef', 'fold'])
 
-#defining which feature set is currently run 
-feature_set = 'test_performance'
-
-for train, n, test in datasets:   
+for train, n, test in datasets:
     # Dividing train and test up into predictor variables, and Diagnosis
     x = train.iloc[:,4:]
     y = train.loc[:,['ID', 'Diagnosis']]
@@ -68,9 +65,9 @@ for train, n, test in datasets:
     #Saving data
    
     # making variables to use in filenames
-    svm_coef_name = "".join(['./performance/test/', str(feature_set), "_coef_test_fold", ".csv"]) 
-    conf_matrix_name = "".join(['./performance/test/', str(feature_set),"_confusion_matrix", str(n), ".csv"]) 
-    classification_report_name = "".join(['./performance/test/', str(feature_set),"_classification_report", str(n), ".csv"]) 
+    svm_coef_name = "".join(['./performance/test/', "coef_test_fold", ".csv"]) 
+    conf_matrix_name = "".join(['./performance/test/', "confusion_matrix", str(n), ".csv"]) 
+    classification_report_name = "".join(['./performance/test/',"classification_report", str(n), ".csv"]) 
 
 
     # Loading each element (classification_report) of the list of dictionaries, as a dataframe 
@@ -90,23 +87,16 @@ for train, n, test in datasets:
 
     # The end
 
-# Testing that the labels for the confusion matrices fit -> Yes they do!!!
-# datasets[0][2].loc[datasets[0][2]['Diagnosis'] == 0]
-# datasets[0][2].loc[datasets[0][2]['Diagnosis'] == 1]
-# pd.read_csv("performance_measures_5_lassos/performance_measures_5_feature_sets_ConfusionMatrix1.csv")
-# pd.read_csv("performance_measures_5_lassos/performance_measures_5_feature_sets_ClassificationReport1.csv")
+pd.read_csv("performance/test/classification_report1.csv")
+pd.read_csv("performance/test/classification_report2.csv")
+pd.read_csv("performance/test/classification_report3.csv")
+pd.read_csv("performance/test/classification_report4.csv")
+pd.read_csv("performance/test/classification_report5.csv")
 
-pd.read_csv("performance/test/test_performance_classification_report1.csv")
-pd.read_csv("performance/test/test_performance_classification_report2.csv")
-pd.read_csv("performance/test/test_performance_classification_report3.csv")
-pd.read_csv("performance/test/test_performance_classification_report4.csv")
-pd.read_csv("performance/test/test_performance_classification_report5.csv")
+pd.read_csv("performance/test/confusion_matrix1.csv")
+pd.read_csv("performance/test/confusion_matrix2.csv")
+pd.read_csv("performance/test/confusion_matrix3.csv")
+pd.read_csv("performance/test/confusion_matrix4.csv")
+pd.read_csv("performance/test/confusion_matrix5.csv")
 
-pd.read_csv("performance/test/test_performance_confusion_matrix1.csv")
-pd.read_csv("performance/test/test_performance_confusion_matrix2.csv")
-pd.read_csv("performance/test/test_performance_confusion_matrix3.csv")
-pd.read_csv("performance/test/test_performance_confusion_matrix4.csv")
-pd.read_csv("performance/test/test_performance_confusion_matrix5.csv")
-
-pd.read_csv("performance/test/test_performance_coef_test_fold.csv")
-
+pd.read_csv("performance/test/coef_test_fold.csv")

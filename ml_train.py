@@ -11,6 +11,14 @@ data3 = [pd.read_csv('./csv_files/train3.csv', index_col=0), 3, pd.read_csv('./c
 data4 = [pd.read_csv('./csv_files/train4.csv', index_col=0), 4, pd.read_csv('./csv_files/train4.csv')]
 data5 = [pd.read_csv('./csv_files/train5.csv', index_col=0), 5, pd.read_csv('./csv_files/train5.csv')]
 
+# Getting baseline accuracy
+(data1[2][data1[2]["Diagnosis"] == 0].shape[0] / (data1[2][data1[2]["Diagnosis"] == 1].shape[0] + data1[2][data1[2]["Diagnosis"] == 0].shape[0]))
+(data2[2][data2[2]["Diagnosis"] == 0].shape[0] / (data2[2][data2[2]["Diagnosis"] == 1].shape[0] + data2[2][data2[2]["Diagnosis"] == 0].shape[0]))
+(data3[2][data3[2]["Diagnosis"] == 0].shape[0] / (data3[2][data3[2]["Diagnosis"] == 1].shape[0] + data3[2][data3[2]["Diagnosis"] == 0].shape[0]))
+(data4[2][data4[2]["Diagnosis"] == 0].shape[0] / (data4[2][data4[2]["Diagnosis"] == 1].shape[0] + data4[2][data4[2]["Diagnosis"] == 0].shape[0]))
+(data5[2][data5[2]["Diagnosis"] == 0].shape[0] / (data5[2][data5[2]["Diagnosis"] == 1].shape[0] + data5[2][data5[2]["Diagnosis"] == 0].shape[0]))
+
+
 ################## Creating a loop, so I won't have to do the below code 5 times ##################
 # Making the datasets into a list
 datasets = [data1, data2, data3, data4, data5]

@@ -11,6 +11,13 @@ data3 = [pd.read_csv('./csv_files/train3.csv', index_col=0), 3, pd.read_csv('./c
 data4 = [pd.read_csv('./csv_files/train4.csv', index_col=0), 4, pd.read_csv('./csv_files/holdout4.csv')]
 data5 = [pd.read_csv('./csv_files/train5.csv', index_col=0), 5, pd.read_csv('./csv_files/holdout5.csv')]
 
+# Getting baseline accuracy
+1 - (data1[2][data1[2]["Diagnosis"] == 0].shape[0] / (data1[2][data1[2]["Diagnosis"] == 1].shape[0] + data1[2][data1[2]["Diagnosis"] == 0].shape[0]))
+(data2[2][data2[2]["Diagnosis"] == 0].shape[0] / (data2[2][data2[2]["Diagnosis"] == 1].shape[0] + data2[2][data2[2]["Diagnosis"] == 0].shape[0]))
+(data3[2][data3[2]["Diagnosis"] == 0].shape[0] / (data3[2][data3[2]["Diagnosis"] == 1].shape[0] + data3[2][data3[2]["Diagnosis"] == 0].shape[0]))
+(data4[2][data4[2]["Diagnosis"] == 0].shape[0] / (data4[2][data4[2]["Diagnosis"] == 1].shape[0] + data4[2][data4[2]["Diagnosis"] == 0].shape[0]))
+(data5[2][data5[2]["Diagnosis"] == 0].shape[0] / (data5[2][data5[2]["Diagnosis"] == 1].shape[0] + data5[2][data5[2]["Diagnosis"] == 0].shape[0]))
+
 ################## Creating a loop, so I won't have to do the below code 5 times ##################
 # Making the datasets into a list
 datasets = [data1, data2, data3, data4, data5]
@@ -95,6 +102,7 @@ for train, n, holdout in datasets:
 # Fixing "predictions" dataframe
 count_of_1_predictions = predictions.iloc[:,-5:].apply(pd.Series.value_counts, axis=1)[1].fillna(0)
 predictions['diagnosis_predic_ensemble'] = [0 if x < 3 else 1 for x in count_of_1_predictions] # For each row, get a count of 1's and 0's in the new columns
+predcitions.to_csv('performance/holdout/ensemble/performance.csv', sep = ',', index = True)
 
 # Performance of ensemble all
 classification_report_ensemble = pd.DataFrame(classification_report(predictions['diagnosis_real'], predictions['diagnosis_predic_ensemble'], output_dict = True))
@@ -122,6 +130,9 @@ conf_matrix_ensemble_male.to_csv('./performance/holdout/ensemble/sex/male_confus
 
 
 ####################### Results #######################
+# Predictions
+performance = pd.read_csv("performance/holdout/ensemble/performance.csv")
+
 # Ensemble all
 pd.read_csv("performance/holdout/ensemble/confusion_matrix.csv")
 pd.read_csv("performance/holdout/ensemble/classification_report.csv")
@@ -150,3 +161,8 @@ pd.read_csv("performance/holdout/models/confusion_matrix4.csv")
 # 5
 pd.read_csv("performance/holdout/models/classification_report5.csv")
 pd.read_csv("performance/holdout/models/confusion_matrix5.csv")
+
+
+# Calculating baseline accuracies for the two sexes (female and male and the conf. matrices)
+1- (female.iloc[1, 1] + female.iloc[1, 2]) / ((female.iloc[1, 1] + female.iloc[1, 2]) + (female.iloc[0, 1] + female.iloc[0, 2]))
+1- (male.iloc[1, 1] + male.iloc[1, 2]) / ((male.iloc[1, 1] + male.iloc[1, 2]) + (male.iloc[0, 1] + male.iloc[0, 2]))

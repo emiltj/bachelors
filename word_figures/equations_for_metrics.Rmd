@@ -8,8 +8,10 @@ output:
 ---
 
 ```{r}
-library(pacman)
-p_load(tinytex)
+# library(pacman)
+# p_load(tinytex)
+# update.packages(ask = FALSE, checkBuilt = TRUE)
+# tinytex::tlmgr_update()
 ```
 
 \begin{center}
